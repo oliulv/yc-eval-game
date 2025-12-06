@@ -112,7 +112,7 @@ export default function ModelGrid({
       // Update with errors
       const errorPredictions: Record<string, Prediction> = {}
       modelIdsToUse.forEach(modelId => {
-        errorPredictions[model.id] = {
+        errorPredictions[modelId] = {
           modelId,
           modelName: modelId,
           error: error.message || 'Failed to predict',
@@ -209,7 +209,7 @@ export default function ModelGrid({
               reasoning={prediction?.reasoning}
               onRequestReasoning={
                 prediction?.prediction && !prediction?.reasoning
-                  ? () => handleReasoning(model.id)
+                  ? () => handleReasoning(modelId)
                   : undefined
               }
               isLoadingReasoning={prediction?.reasoningLoading}
