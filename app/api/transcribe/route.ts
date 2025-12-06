@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
-import ytdl from '@distube/ytdl-core'
-import { transcribeAudio } from '@/lib/whisper'
-import { sanitizeTranscript } from '@/lib/sanitize'
 import { supabaseAdmin } from '@/lib/supabase'
+import {
+  isDownloadError,
+  markDownloadFailure,
+  persistTranscription,
+  transcribeYoutubeAudio,
+} from '@/lib/transcription'
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +21,7 @@ export async function POST(request: Request) {
     // Check if video already exists and has transcript
     const { data: existingVideo } = await supabaseAdmin
       .from('videos')
-      .select('transcript, raw_transcript')
+      .select('transcript, raw_transcript, title, accepted')
       .eq('youtube_id', youtubeId)
       .single()
 
@@ -29,63 +32,51 @@ export async function POST(request: Request) {
       })
     }
 
-    // Download audio from YouTube
-    let audioBuffer: Buffer
+    // Transcribe with yt-dlp-backed flow (works for all uploaded videos too)
     try {
-      const audioStream = ytdl(youtubeId, {
-        quality: 'lowestaudio',
-        filter: 'audioonly',
+      const transcription = await transcribeYoutubeAudio(youtubeId)
+      await persistTranscription(youtubeId, transcription, {
+        allowInsertIfMissing: true,
+        accepted: existingVideo?.accepted ?? false,
+        title: existingVideo?.title ?? null,
       })
 
-      // Convert stream to buffer
-      const chunks: Buffer[] = []
-      for await (const chunk of audioStream) {
-        chunks.push(Buffer.from(chunk))
+      return NextResponse.json({
+        transcript: transcription.sanitizedTranscript,
+        cached: false,
+      })
+    } catch (err: any) {
+      const errnoCode = (err as NodeJS.ErrnoException)?.code
+      const details =
+        errnoCode === 'ENOENT'
+          ? 'yt-dlp binary not found. Install yt-dlp and ensure it is on PATH.'
+          : err?.message || 'Failed to transcribe video'
+
+      if (isDownloadError(err)) {
+        console.error('[YTDL_DOWNLOAD_ERROR]', {
+          youtubeId,
+          message: err?.message,
+          statusCode: err?.statusCode,
+          code: errnoCode,
+          stderr: err?.stderr,
+        })
+
+        await markDownloadFailure(youtubeId, details)
+
+        return NextResponse.json(
+          {
+            ok: false,
+            error: 'download_failed',
+            statusCode: err?.statusCode ?? 500,
+            details,
+          },
+          { status: 500 }
+        )
       }
-      audioBuffer = Buffer.concat(chunks)
-    } catch (ytdlError: any) {
-      console.error('ytdl-core error:', ytdlError)
-      throw new Error(`Failed to download audio from YouTube: ${ytdlError.message}. The video may be unavailable or restricted.`)
+
+      throw err
     }
 
-    // Transcribe with Whisper
-    const rawTranscript = await transcribeAudio(audioBuffer, `${youtubeId}.mp3`)
-
-    // Sanitize transcript
-    const sanitizedTranscript = sanitizeTranscript(rawTranscript)
-
-    // Update video in database
-    if (existingVideo) {
-      const { error } = await supabaseAdmin
-        .from('videos')
-        .update({
-          transcript: sanitizedTranscript,
-          raw_transcript: rawTranscript,
-          transcribed_at: new Date().toISOString(),
-        })
-        .eq('youtube_id', youtubeId)
-
-      if (error) throw error
-    } else {
-      // Video doesn't exist yet, create it
-      // We'll need title and accepted status - for now just create placeholder
-      const { error } = await supabaseAdmin
-        .from('videos')
-        .insert({
-          youtube_id: youtubeId,
-          transcript: sanitizedTranscript,
-          raw_transcript: rawTranscript,
-          accepted: false, // Will be set when video is properly added
-          transcribed_at: new Date().toISOString(),
-        })
-
-      if (error) throw error
-    }
-
-    return NextResponse.json({
-      transcript: sanitizedTranscript,
-      cached: false,
-    })
   } catch (error: any) {
     console.error('Transcription error:', error)
     return NextResponse.json(
@@ -94,4 +85,3 @@ export async function POST(request: Request) {
     )
   }
 }
-

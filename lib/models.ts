@@ -22,8 +22,8 @@ export const MODELS: Model[] = [
   { id: 'grok-2', name: 'Grok 2', modelId: 'xai/grok-2' },
   { id: 'grok-code-fast-1', name: 'Grok Code Fast 1', modelId: 'xai/grok-code-fast-1' },
   
-  // Meta (via Groq on AI Gateway)
-  { id: 'llama-3.3-70b', name: 'Llama 3.3 70B', modelId: 'meta-llama/llama-3.3-70b-instruct' },
+  // Meta Llama (via Groq on AI Gateway)
+  { id: 'llama-3.3-70b', name: 'Llama 3.3 70B', modelId: 'groq/llama-3.3-70b-instruct' },
 ]
 
 export function getModelById(id: string): Model | undefined {

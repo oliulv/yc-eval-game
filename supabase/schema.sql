@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS videos (
   title TEXT,
   transcript TEXT, -- Sanitized transcript (shown to models)
   raw_transcript TEXT, -- Original transcript (never exposed)
+  transcript_status TEXT DEFAULT 'PENDING', -- PENDING, TRANSCRIBED, DOWNLOAD_FAILED
+  last_transcription_error TEXT,
   accepted BOOLEAN NOT NULL,
   transcribed_at TIMESTAMP WITH TIME ZONE,
   submitted_by TEXT NOT NULL DEFAULT 'system',
@@ -53,4 +55,3 @@ JOIN videos v ON mp.video_id = v.id
 GROUP BY model_name
 HAVING COUNT(*) > 0
 ORDER BY accuracy DESC, total_predictions DESC;
-

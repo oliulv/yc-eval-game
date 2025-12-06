@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import VideoPlayer from '@/components/VideoPlayer'
@@ -18,12 +18,22 @@ export default function Home() {
   const [transcribing, setTranscribing] = useState(false)
   const [revealed, setRevealed] = useState(false)
   const router = useRouter()
+  const hasRandomized = useRef(false)
 
   const currentVideo = videos[currentVideoIndex]
 
   useEffect(() => {
     fetchVideos()
   }, [])
+
+  // Randomize initial video when videos are first loaded (only once)
+  useEffect(() => {
+    if (videos.length > 0 && !hasRandomized.current) {
+      const randomIndex = Math.floor(Math.random() * videos.length)
+      setCurrentVideoIndex(randomIndex)
+      hasRandomized.current = true
+    }
+  }, [videos.length])
 
   useEffect(() => {
     if (currentVideo) {

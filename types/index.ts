@@ -1,9 +1,13 @@
+export type TranscriptStatus = 'PENDING' | 'TRANSCRIBED' | 'DOWNLOAD_FAILED'
+
 export interface Video {
   id: string
   youtube_id: string
   title: string | null
   transcript: string | null
   raw_transcript: string | null
+  transcript_status?: TranscriptStatus | null
+  last_transcription_error?: string | null
   accepted: boolean
   transcribed_at: string | null
   submitted_by: string
@@ -27,4 +31,3 @@ export interface ModelStats {
   accuracy: number
   avg_response_time: number
 }
-

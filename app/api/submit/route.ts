@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import ytdl from '@distube/ytdl-core'
+import { fetchYouTubeTitle } from '@/lib/youtube'
+import {
+  isDownloadError,
+  markDownloadFailure,
+  persistTranscription,
+  transcribeYoutubeAudio,
+} from '@/lib/transcription'
 
 function extractYouTubeId(url: string): string | null {
   const patterns = [
@@ -48,25 +54,23 @@ export async function POST(request: Request) {
       )
     }
 
-    // Validate YouTube video exists
+    let title: string
     try {
-      const info = await ytdl.getInfo(youtubeId)
-      const title = info.videoDetails.title
-    } catch (error) {
+      title = await fetchYouTubeTitle(youtubeId)
+    } catch (error: any) {
       return NextResponse.json(
-        { error: 'YouTube video not found or unavailable' },
+        {
+          error: 'YouTube video not found or unavailable',
+          details: error?.message,
+        },
         { status: 404 }
       )
     }
 
-    // Get video info for title
-    const info = await ytdl.getInfo(youtubeId)
-    const title = info.videoDetails.title
-
     // Generate a simple session ID for anonymous submissions
     const sessionId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
-    // Insert video (transcript will be null, transcribed on first prediction)
+    // Insert video, then transcribe immediately using yt-dlp-backed pipeline
     const { data: video, error: insertError } = await supabaseAdmin
       .from('videos')
       .insert({
@@ -84,15 +88,48 @@ export async function POST(request: Request) {
       throw insertError
     }
 
-    return NextResponse.json({
-      success: true,
-      video: {
-        id: video.id,
-        youtube_id: video.youtube_id,
-        title: video.title,
-        accepted: video.accepted,
+    // Immediately transcribe using the same yt-dlp-backed pipeline used elsewhere
+    try {
+      const transcription = await transcribeYoutubeAudio(youtubeId)
+      await persistTranscription(youtubeId, transcription, {
+        allowInsertIfMissing: false,
+      })
+    } catch (err: any) {
+      const errnoCode = (err as NodeJS.ErrnoException)?.code
+      const details =
+        errnoCode === 'ENOENT'
+          ? 'yt-dlp binary not found. Install yt-dlp and ensure it is on PATH.'
+          : err?.message || 'Failed to transcribe video'
+
+      if (isDownloadError(err)) {
+        console.error('[YTDL_DOWNLOAD_ERROR]', {
+          youtubeId,
+          message: err?.message,
+          statusCode: err?.statusCode,
+          code: errnoCode,
+          stderr: err?.stderr,
+        })
+        await markDownloadFailure(youtubeId, details)
+      }
+
+      return NextResponse.json(
+        { error: details, video },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        video: {
+          id: video.id,
+          youtube_id: video.youtube_id,
+          title: video.title,
+          accepted: video.accepted,
+        },
       },
-    })
+      { status: 200 }
+    )
   } catch (error: any) {
     console.error('Submit error:', error)
     return NextResponse.json(
@@ -101,4 +138,3 @@ export async function POST(request: Request) {
     )
   }
 }
-

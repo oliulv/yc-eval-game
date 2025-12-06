@@ -30,6 +30,25 @@ export default function ModelGrid({
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({})
   const [isLoading, setIsLoading] = useState(false)
 
+  // Update correct/incorrect status when actual is revealed
+  useEffect(() => {
+    if (actual !== undefined) {
+      setPredictions((prev) => {
+        const updated: Record<string, Prediction> = {}
+        Object.keys(prev).forEach((modelId) => {
+          const pred = prev[modelId]
+          updated[modelId] = {
+            ...pred,
+            correct: pred.prediction
+              ? pred.prediction === (actual ? 'YES' : 'NO')
+              : undefined,
+          }
+        })
+        return updated
+      })
+    }
+  }, [actual])
+
   const modelsToUse = selectedModelIds && selectedModelIds.length > 0
     ? MODELS.filter(m => selectedModelIds.includes(m.id))
     : MODELS
@@ -74,7 +93,7 @@ export default function ModelGrid({
       data.predictions.forEach((pred: Prediction) => {
         newPredictions[pred.modelId] = {
           ...pred,
-          correct: actual !== undefined
+          correct: actual !== undefined && pred.prediction
             ? pred.prediction === (actual ? 'YES' : 'NO')
             : undefined,
         }
