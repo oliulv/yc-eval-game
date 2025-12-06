@@ -36,7 +36,11 @@ ${transcript}`
 export async function getModelPrediction(
   model: Model,
   transcript: string,
-  options?: { includeReasoning?: boolean; forcePrediction?: 'YES' | 'NO' }
+  options?: {
+    includeReasoning?: boolean
+    forcePrediction?: 'YES' | 'NO'
+    maxReasonMs?: number
+  }
 ): Promise<{
   prediction: 'YES' | 'NO'
   confidence?: number
@@ -46,6 +50,12 @@ export async function getModelPrediction(
   const startTime = Date.now()
 
   const prompt = buildPrompt(transcript, options)
+  const abortController = new AbortController()
+  const timeoutMs = Math.max(0, options?.maxReasonMs || 0)
+  const timeout =
+    timeoutMs > 0
+      ? setTimeout(() => abortController.abort(), timeoutMs)
+      : null
 
   try {
     const result = await generateText({
@@ -53,6 +63,7 @@ export async function getModelPrediction(
       prompt,
       maxOutputTokens: options?.includeReasoning ? 120 : 10,
       temperature: options?.includeReasoning ? 0.2 : 0,
+      abortSignal: abortController.signal,
     })
 
     const responseTime = Date.now() - startTime
@@ -87,8 +98,13 @@ export async function getModelPrediction(
       responseTime,
       reasoning,
     }
-  } catch (error) {
+  } catch (error: any) {
+    if (abortController.signal.aborted) {
+      throw new Error('Prediction timed out')
+    }
     console.error(`Error getting prediction from ${model.name}:`, error)
     throw error
+  } finally {
+    if (timeout) clearTimeout(timeout)
   }
 }

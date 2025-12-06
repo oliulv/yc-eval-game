@@ -8,16 +8,42 @@ import ModelGrid from '@/components/ModelGrid'
 import UserGuess from '@/components/UserGuess'
 import ModelSelector from '@/components/ModelSelector'
 import type { Video } from '@/types'
-import { MODELS } from '@/lib/models'
+import { DEFAULT_MODEL_ID } from '@/config/modelAllowlist'
+
+function getStoredModels() {
+  if (typeof window === 'undefined') return [DEFAULT_MODEL_ID]
+  try {
+    const raw = window.localStorage.getItem('selectedModelIds')
+    const parsed = raw ? JSON.parse(raw) : null
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed
+  } catch (_) {
+    // ignore
+  }
+  return [DEFAULT_MODEL_ID]
+}
+
+function getStoredMaxReason() {
+  if (typeof window === 'undefined') return 8000
+  try {
+    const raw = window.localStorage.getItem('maxReasonMs')
+    const val = Math.max(500, Number(raw) || 8000)
+    return val
+  } catch {
+    return 8000
+  }
+}
 
 export default function Home() {
   const [videos, setVideos] = useState<Video[]>([])
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
-  const [selectedModelIds, setSelectedModelIds] = useState<string[]>(MODELS.map(m => m.id))
+  const [selectedModelIds, setSelectedModelIds] = useState<string[]>(getStoredModels)
   const [transcript, setTranscript] = useState<string | null>(null)
   const [transcribing, setTranscribing] = useState(false)
   const [revealed, setRevealed] = useState(false)
   const [loadingVideos, setLoadingVideos] = useState(true)
+  const [maxReasonMs, setMaxReasonMs] = useState(getStoredMaxReason)
+  const [showModelPicker, setShowModelPicker] = useState(false)
+  const initializedFromStorage = useRef(false)
   const router = useRouter()
   const hasRandomized = useRef(false)
 
@@ -25,6 +51,9 @@ export default function Home() {
 
   useEffect(() => {
     const load = async () => {
+      // mark that initial read has occurred
+      initializedFromStorage.current = true
+
       await fetchVideos()
       setLoadingVideos(false)
     }
@@ -44,6 +73,23 @@ export default function Home() {
     }
   }, [currentVideo])
 
+  // Persist preferences
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('selectedModelIds', JSON.stringify(selectedModelIds))
+    } catch {
+      // ignore
+    }
+  }, [selectedModelIds])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('maxReasonMs', String(maxReasonMs))
+    } catch {
+      // ignore
+    }
+  }, [maxReasonMs])
+
   const fetchVideos = async () => {
     try {
       const currentId = videos[currentVideoIndex]?.id
@@ -51,7 +97,8 @@ export default function Home() {
       const response = await fetch('/api/videos?limit=100')
       const data = await response.json()
 
-      let list: Video[] = data.videos || []
+      // Shuffle entire list for variety
+      let list: Video[] = (data.videos || []).slice().sort(() => Math.random() - 0.5)
 
       // Initial load: pick a random video but treat it as #1 by reordering array
       if (!hasRandomized.current && list.length > 0) {
@@ -59,9 +106,6 @@ export default function Home() {
         const [randomVideo] = list.splice(randomIndex, 1)
         list = [randomVideo, ...list]
         hasRandomized.current = true
-        setVideos(list)
-        setCurrentVideoIndex(0)
-        return
       }
 
       setVideos(list)
@@ -195,9 +239,9 @@ export default function Home() {
             </div>
 
             {/* Main Content: Video and Predictions Side by Side on Desktop */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               {/* Left Column: Video */}
-              <div className="space-y-4">
+              <div className="space-y-4 lg:col-span-3">
                 <VideoPlayer
                   youtubeId={currentVideo.youtube_id}
                 />
@@ -229,11 +273,42 @@ export default function Home() {
               </div>
 
               {/* Right Column: Model Selector and Predictions */}
-              <div className="space-y-4">
-                <ModelSelector
-                  selectedModelIds={selectedModelIds}
-                  onChange={setSelectedModelIds}
-                />
+              <div className="space-y-4 lg:col-span-2">
+                <div className="border border-gray-200 rounded-sm bg-white">
+                  <button
+                    onClick={() => setShowModelPicker((v) => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-200 text-sm font-mono"
+                  >
+                    <span className="text-gray-900">Models & Reasoning Settings</span>
+                    <span className="text-gray-600">{showModelPicker ? 'Hide' : 'Show'}</span>
+                  </button>
+                  {showModelPicker && (
+                    <div className="p-4 space-y-4">
+                      <ModelSelector
+                        selectedModelIds={selectedModelIds}
+                        onChange={setSelectedModelIds}
+                      />
+                      <div className="border border-gray-200 rounded-sm p-4 bg-white">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-mono text-gray-900">
+                            Max reasoning time (ms)
+                          </label>
+                          <input
+                            type="number"
+                            min={500}
+                            step={250}
+                            value={maxReasonMs}
+                            onChange={(e) => setMaxReasonMs(Math.max(500, Number(e.target.value) || 500))}
+                            className="w-28 px-2 py-1 border border-gray-300 rounded-sm text-sm font-mono"
+                          />
+                        </div>
+                        <p className="text-xs font-mono text-gray-500 mt-2">
+                          Requests will timeout after this duration.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <ModelGrid
                   key={currentVideo.id}
@@ -241,6 +316,7 @@ export default function Home() {
                   transcript={transcript}
                   actual={currentVideo.accepted}
                   selectedModelIds={selectedModelIds}
+                  maxReasonMs={maxReasonMs}
                   onActualReveal={() => setRevealed(true)}
                 />
               </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import ModelCard from './ModelCard'
-import { MODELS } from '@/lib/models'
+import { DEFAULT_MODEL_ID } from '@/config/modelAllowlist'
 
 interface Prediction {
   modelId: string
@@ -21,6 +21,7 @@ interface ModelGridProps {
   transcript: string | null
   actual?: boolean
   selectedModelIds?: string[]
+  maxReasonMs?: number
   onActualReveal?: () => void
 }
 
@@ -29,6 +30,7 @@ export default function ModelGrid({
   transcript,
   actual,
   selectedModelIds,
+  maxReasonMs = 8000,
   onActualReveal,
 }: ModelGridProps) {
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({})
@@ -53,9 +55,9 @@ export default function ModelGrid({
     }
   }, [actual])
 
-  const modelsToUse = selectedModelIds && selectedModelIds.length > 0
-    ? MODELS.filter(m => selectedModelIds.includes(m.id))
-    : MODELS
+  const modelIdsToUse = selectedModelIds && selectedModelIds.length > 0
+    ? selectedModelIds
+    : [DEFAULT_MODEL_ID]
 
   const handlePredict = async () => {
     if (!transcript) {
@@ -68,10 +70,10 @@ export default function ModelGrid({
 
     // Initialize all models as "thinking"
     const initialPredictions: Record<string, Prediction> = {}
-    modelsToUse.forEach(model => {
-      initialPredictions[model.id] = {
-        modelId: model.id,
-        modelName: model.name,
+    modelIdsToUse.forEach(modelId => {
+      initialPredictions[modelId] = {
+        modelId,
+        modelName: modelId,
       }
     })
     setPredictions(initialPredictions)
@@ -82,7 +84,8 @@ export default function ModelGrid({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           videoId,
-          modelIds: selectedModelIds || MODELS.map(m => m.id),
+          modelIds: modelIdsToUse,
+          maxReasonMs,
         }),
       })
 
@@ -108,10 +111,10 @@ export default function ModelGrid({
       console.error('Prediction error:', error)
       // Update with errors
       const errorPredictions: Record<string, Prediction> = {}
-      modelsToUse.forEach(model => {
+      modelIdsToUse.forEach(modelId => {
         errorPredictions[model.id] = {
-          modelId: model.id,
-          modelName: model.name,
+          modelId,
+          modelName: modelId,
           error: error.message || 'Failed to predict',
         }
       })
@@ -136,6 +139,7 @@ export default function ModelGrid({
           videoId,
           modelId,
           prediction: priorPrediction,
+          maxReasonMs,
         }),
       })
 
@@ -191,12 +195,12 @@ export default function ModelGrid({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {modelsToUse.map((model) => {
-          const prediction = predictions[model.id]
+        {modelIdsToUse.map((modelId) => {
+          const prediction = predictions[modelId]
           return (
             <ModelCard
-              key={model.id}
-              modelName={model.name}
+              key={modelId}
+              modelName={prediction?.modelName || modelId}
               prediction={prediction?.prediction}
               responseTime={prediction?.responseTime}
               correct={prediction?.correct}

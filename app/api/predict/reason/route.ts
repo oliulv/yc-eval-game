@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getModelPrediction } from '@/lib/ai'
-import { getModelById } from '@/lib/models'
 import { getSupabaseAdminClient } from '@/lib/supabase'
+import { getAllowedModels } from '@/lib/gatewayModels'
 
 export async function POST(request: Request) {
   try {
-    const { videoId, modelId, prediction: priorPrediction } = await request.json()
+    const { videoId, modelId, prediction: priorPrediction, maxReasonMs } = await request.json()
 
     if (!videoId || !modelId) {
       return NextResponse.json(
@@ -14,7 +14,8 @@ export async function POST(request: Request) {
       )
     }
 
-    const model = getModelById(modelId)
+    const allowedModels = await getAllowedModels()
+    const model = allowedModels.find((m) => m.id === modelId)
     if (!model) {
       return NextResponse.json(
         { error: 'Model not found' },
@@ -43,10 +44,16 @@ export async function POST(request: Request) {
       )
     }
 
-    const result = await getModelPrediction(model, video.transcript, {
-      includeReasoning: true,
-      forcePrediction: priorPrediction,
-    })
+    const timeoutMs = Math.max(500, Number(maxReasonMs) || 8000)
+    const result = await getModelPrediction(
+      { id: model.id, name: model.label, modelId: model.id },
+      video.transcript,
+      {
+        includeReasoning: true,
+        forcePrediction: priorPrediction,
+        maxReasonMs: timeoutMs,
+      }
+    )
 
     return NextResponse.json({
       modelId: model.id,

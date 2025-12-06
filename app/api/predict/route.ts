@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getModelPrediction } from '@/lib/ai'
-import { MODELS, getModelById, type Model } from '@/lib/models'
 import { getSupabaseAdminClient } from '@/lib/supabase'
+import { getAllowedModels } from '@/lib/gatewayModels'
+import { DEFAULT_MODEL_ID } from '@/config/modelAllowlist'
 
 export async function POST(request: Request) {
   try {
-    const { videoId, modelIds } = await request.json()
+    const { videoId, modelIds, maxReasonMs } = await request.json()
 
     if (!videoId) {
       return NextResponse.json(
@@ -36,15 +37,30 @@ export async function POST(request: Request) {
       )
     }
 
-    // Filter models
-    const selectedModels = modelIds && modelIds.length > 0
-      ? modelIds.map((id: string) => getModelById(id)).filter(Boolean)
-      : MODELS
+    const allowedModels = await getAllowedModels()
+    const modelMap = new Map(allowedModels.map((m) => [m.id, m]))
+    const resolvedModels =
+      modelIds && modelIds.length > 0
+        ? modelIds.map((id: string) => modelMap.get(id)).filter(Boolean)
+        : allowedModels.filter((m) => m.id === DEFAULT_MODEL_ID || m.recommended).slice(0, 5)
+
+    if (resolvedModels.length === 0) {
+      return NextResponse.json(
+        { error: 'No valid models selected' },
+        { status: 400 }
+      )
+    }
+
+    const timeoutMs = Math.max(500, Number(maxReasonMs) || 8000)
 
     // Get predictions from all selected models in parallel
     const predictions = await Promise.allSettled(
-      selectedModels.map(async (model: Model) => {
-        const result = await getModelPrediction(model, video.transcript!)
+      resolvedModels.map(async (model) => {
+        const result = await getModelPrediction(
+          { id: model.id, name: model.label, modelId: model.id },
+          video.transcript!,
+          { maxReasonMs: timeoutMs }
+        )
         
         // Store prediction in database
         await supabaseAdmin
@@ -73,8 +89,8 @@ export async function POST(request: Request) {
         return p.value
       } else {
         return {
-          modelId: selectedModels[idx].id,
-          modelName: selectedModels[idx].name,
+          modelId: resolvedModels[idx].id,
+          modelName: resolvedModels[idx].label,
           error: p.reason?.message || 'Prediction failed',
         }
       }
