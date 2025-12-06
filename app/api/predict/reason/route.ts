@@ -45,15 +45,29 @@ export async function POST(request: Request) {
     }
 
     const timeoutMs = Math.max(500, Number(maxReasonMs) || 8000)
-    const result = await getModelPrediction(
-      { id: model.id, name: model.label, modelId: model.id },
-      video.transcript,
-      {
-        includeReasoning: true,
-        forcePrediction: priorPrediction,
-        maxReasonMs: timeoutMs,
-      }
-    )
+    let result
+    try {
+      result = await getModelPrediction(
+        { id: model.id, name: model.label, modelId: model.id },
+        video.transcript,
+        {
+          includeReasoning: true,
+          forcePrediction: priorPrediction,
+          maxReasonMs: timeoutMs,
+        }
+      )
+    } catch (err) {
+      // Fallback: try again without reasoning if model/provider rejects
+      result = await getModelPrediction(
+        { id: model.id, name: model.label, modelId: model.id },
+        video.transcript,
+        {
+          includeReasoning: false,
+          forcePrediction: priorPrediction,
+          maxReasonMs: timeoutMs,
+        }
+      )
+    }
 
     return NextResponse.json({
       modelId: model.id,

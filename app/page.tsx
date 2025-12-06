@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import VideoPlayer from '@/components/VideoPlayer'
 import ModelGrid from '@/components/ModelGrid'
@@ -38,13 +37,11 @@ export default function Home() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [selectedModelIds, setSelectedModelIds] = useState<string[]>(getStoredModels)
   const [transcript, setTranscript] = useState<string | null>(null)
-  const [transcribing, setTranscribing] = useState(false)
   const [revealed, setRevealed] = useState(false)
   const [loadingVideos, setLoadingVideos] = useState(true)
   const [maxReasonMs, setMaxReasonMs] = useState(getStoredMaxReason)
   const [showModelPicker, setShowModelPicker] = useState(false)
   const initializedFromStorage = useRef(false)
-  const router = useRouter()
   const hasRandomized = useRef(false)
 
   const currentVideo = videos[currentVideoIndex]
@@ -65,11 +62,6 @@ export default function Home() {
     if (currentVideo) {
       setTranscript(currentVideo.transcript)
       setRevealed(false)
-      
-      // Auto-transcribe if needed
-      if (!currentVideo.transcript && !transcribing) {
-        transcribeVideo(currentVideo.youtube_id)
-      }
     }
   }, [currentVideo])
 
@@ -122,28 +114,6 @@ export default function Home() {
     }
   }
 
-  const transcribeVideo = async (youtubeId: string) => {
-    setTranscribing(true)
-    try {
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ youtubeId }),
-      })
-
-      const data = await response.json()
-      if (data.transcript) {
-        setTranscript(data.transcript)
-        // Refresh videos to get updated transcript
-        fetchVideos()
-      }
-    } catch (error) {
-      console.error('Transcription failed:', error)
-    } finally {
-      setTranscribing(false)
-    }
-  }
-
   const handleNext = () => {
     setCurrentVideoIndex((prev) =>
       prev < videos.length - 1 ? prev + 1 : prev
@@ -168,20 +138,14 @@ export default function Home() {
   }
 
   if (videos.length === 0) {
-  return (
+    return (
       <div className="min-h-screen bg-white">
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="text-center">
             <h1 className="text-3xl font-mono mb-4 text-gray-900">No videos available</h1>
             <p className="text-gray-600 font-mono mb-8">
-              Add videos to get started
+              Add videos to get started (use local upload script).
             </p>
-            <Link
-              href="/submit"
-              className="inline-block px-6 py-3 border border-gray-300 rounded-sm font-mono text-sm hover:bg-gray-50"
-            >
-              Submit a Video
-            </Link>
           </div>
         </div>
       </div>
@@ -246,19 +210,10 @@ export default function Home() {
                   youtubeId={currentVideo.youtube_id}
                 />
 
-                {/* Transcription Status */}
-                {transcribing && (
-                  <div className="p-3 border border-gray-200 rounded-sm bg-gray-50">
-                    <p className="text-xs font-mono text-gray-600">
-                      Transcribing video...
-                    </p>
-                  </div>
-                )}
-
-                {!transcript && !transcribing && (
+                {!transcript && (
                   <div className="p-3 border border-gray-200 rounded-sm bg-yellow-50">
                     <p className="text-xs font-mono text-yellow-700">
-                      Transcript not available. Click "Get Predictions" to transcribe automatically.
+                      Transcript not available for this video. Add one via the local upload script.
                     </p>
                   </div>
                 )}
