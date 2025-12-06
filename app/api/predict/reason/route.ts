@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       modelId: model.id,
-      modelName: model.name,
+      modelName: model.label,
       prediction: result.prediction,
       reasoning: result.reasoning,
       responseTime: result.responseTime,
