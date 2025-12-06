@@ -51,7 +51,7 @@ export async function getModelPrediction(
     const result = await generateText({
       model: model.modelId, // SDK handles routing automatically
       prompt,
-      maxTokens: options?.includeReasoning ? 120 : 10,
+      maxOutputTokens: options?.includeReasoning ? 120 : 10,
       temperature: options?.includeReasoning ? 0.2 : 0,
     })
 

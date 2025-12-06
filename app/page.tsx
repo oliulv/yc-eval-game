@@ -17,13 +17,18 @@ export default function Home() {
   const [transcript, setTranscript] = useState<string | null>(null)
   const [transcribing, setTranscribing] = useState(false)
   const [revealed, setRevealed] = useState(false)
+  const [loadingVideos, setLoadingVideos] = useState(true)
   const router = useRouter()
   const hasRandomized = useRef(false)
 
   const currentVideo = videos[currentVideoIndex]
 
   useEffect(() => {
-    fetchVideos()
+    const load = async () => {
+      await fetchVideos()
+      setLoadingVideos(false)
+    }
+    load()
   }, [])
 
   // Randomize initial video when videos are first loaded (only once)
@@ -103,6 +108,19 @@ export default function Home() {
 
   const handlePrevious = () => {
     setCurrentVideoIndex((prev) => (prev > 0 ? prev - 1 : prev))
+  }
+
+  if (loadingVideos) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center">
+            <h1 className="text-2xl font-mono mb-4 text-gray-900">Loading videos...</h1>
+            <p className="text-gray-600 font-mono">Fetching the next batch.</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (videos.length === 0) {
