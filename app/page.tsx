@@ -28,14 +28,6 @@ export default function Home() {
 
   // Randomize initial video when videos are first loaded (only once)
   useEffect(() => {
-    if (videos.length > 0 && !hasRandomized.current) {
-      const randomIndex = Math.floor(Math.random() * videos.length)
-      setCurrentVideoIndex(randomIndex)
-      hasRandomized.current = true
-    }
-  }, [videos.length])
-
-  useEffect(() => {
     if (currentVideo) {
       setTranscript(currentVideo.transcript)
       setRevealed(false)
@@ -49,9 +41,33 @@ export default function Home() {
 
   const fetchVideos = async () => {
     try {
+      const currentId = videos[currentVideoIndex]?.id
+
       const response = await fetch('/api/videos?limit=100')
       const data = await response.json()
-      setVideos(data.videos || [])
+
+      let list: Video[] = data.videos || []
+
+      // Initial load: pick a random video but treat it as #1 by reordering array
+      if (!hasRandomized.current && list.length > 0) {
+        const randomIndex = Math.floor(Math.random() * list.length)
+        const [randomVideo] = list.splice(randomIndex, 1)
+        list = [randomVideo, ...list]
+        hasRandomized.current = true
+        setVideos(list)
+        setCurrentVideoIndex(0)
+        return
+      }
+
+      setVideos(list)
+
+      // Keep the user on the same video after refreshes if possible
+      if (currentId) {
+        const newIndex = list.findIndex((v: Video) => v.id === currentId)
+        setCurrentVideoIndex(newIndex >= 0 ? newIndex : 0)
+      } else {
+        setCurrentVideoIndex(0)
+      }
     } catch (error) {
       console.error('Failed to fetch videos:', error)
     }
@@ -80,15 +96,13 @@ export default function Home() {
   }
 
   const handleNext = () => {
-    if (currentVideoIndex < videos.length - 1) {
-      setCurrentVideoIndex(currentVideoIndex + 1)
-    }
+    setCurrentVideoIndex((prev) =>
+      prev < videos.length - 1 ? prev + 1 : prev
+    )
   }
 
   const handlePrevious = () => {
-    if (currentVideoIndex > 0) {
-      setCurrentVideoIndex(currentVideoIndex - 1)
-    }
+    setCurrentVideoIndex((prev) => (prev > 0 ? prev - 1 : prev))
   }
 
   if (videos.length === 0) {
@@ -190,7 +204,8 @@ export default function Home() {
 
                 {/* User Guess */}
                 <UserGuess
-                  actual={revealed ? currentVideo.accepted : undefined}
+                  key={currentVideo.id}
+                  actual={currentVideo.accepted}
                   onReveal={() => setRevealed(true)}
                 />
               </div>
@@ -203,10 +218,12 @@ export default function Home() {
                 />
 
                 <ModelGrid
+                  key={currentVideo.id}
                   videoId={currentVideo.id}
                   transcript={transcript}
-                  actual={revealed ? currentVideo.accepted : undefined}
+                  actual={currentVideo.accepted}
                   selectedModelIds={selectedModelIds}
+                  onActualReveal={() => setRevealed(true)}
                 />
               </div>
             </div>

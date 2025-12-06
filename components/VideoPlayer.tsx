@@ -13,8 +13,6 @@ export default function VideoPlayer({ youtubeId, title, onVideoEnd }: VideoPlaye
   const [playerReady, setPlayerReady] = useState(false)
 
   const opts = {
-    height: '280',
-    width: '100%',
     playerVars: {
       autoplay: 0,
       modestbranding: 1,
@@ -29,16 +27,19 @@ export default function VideoPlayer({ youtubeId, title, onVideoEnd }: VideoPlaye
           {title}
         </h2>
       )}
-      <div className="relative w-full bg-black rounded-sm border border-gray-200" style={{ aspectRatio: '16/9', maxWidth: '500px' }}>
+      <div
+        className="relative w-full bg-black rounded-sm border border-gray-200 overflow-hidden"
+        style={{ aspectRatio: '16/9' }}
+      >
         <YouTube
           videoId={youtubeId}
           opts={opts}
           onReady={() => setPlayerReady(true)}
           onEnd={onVideoEnd}
-          className="w-full h-full"
+          className="absolute inset-0 w-full h-full"
+          iframeClassName="w-full h-full"
         />
       </div>
     </div>
   )
 }
-

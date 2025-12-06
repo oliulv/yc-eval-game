@@ -9,6 +9,9 @@ interface ModelCardProps {
   correct?: boolean
   error?: string
   isThinking?: boolean
+  reasoning?: string
+  onRequestReasoning?: () => void
+  isLoadingReasoning?: boolean
 }
 
 export default function ModelCard({
@@ -18,6 +21,9 @@ export default function ModelCard({
   correct,
   error,
   isThinking = false,
+  reasoning,
+  onRequestReasoning,
+  isLoadingReasoning = false,
 }: ModelCardProps) {
   const [dots, setDots] = useState('')
 
@@ -74,7 +80,7 @@ export default function ModelCard({
             {prediction}
           </div>
           {correct !== undefined && (
-            <div className="mt-2 text-xs font-mono">
+            <div className="mt-2 text-xs font-mono flex items-center gap-2">
               {correct ? (
                 <span className="text-green-600">✓ Correct</span>
               ) : (
@@ -82,9 +88,24 @@ export default function ModelCard({
               )}
             </div>
           )}
+
+          <div className="mt-3">
+            {reasoning ? (
+              <div className="text-xs font-mono text-gray-700 whitespace-pre-line">
+                {reasoning}
+              </div>
+            ) : onRequestReasoning ? (
+              <button
+                onClick={onRequestReasoning}
+                disabled={isLoadingReasoning}
+                className="text-xs font-mono text-gray-700 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50"
+              >
+                {isLoadingReasoning ? 'Loading reasoning...' : 'View reasoning'}
+              </button>
+            ) : null}
+          </div>
         </div>
       )}
     </div>
   )
 }
-

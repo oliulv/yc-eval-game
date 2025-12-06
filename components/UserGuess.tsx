@@ -11,16 +11,19 @@ export default function UserGuess({ actual, onReveal }: UserGuessProps) {
   const [userGuess, setUserGuess] = useState<'YES' | 'NO' | null>(null)
   const [revealed, setRevealed] = useState(false)
 
-  const handleReveal = () => {
-    if (actual === undefined) {
-      alert('No actual result available')
-      return
-    }
+  const revealNow = () => {
+    if (actual === undefined) return
     setRevealed(true)
     onReveal?.()
   }
 
-  const correct = revealed && userGuess !== null
+  const handleGuess = (guess: 'YES' | 'NO') => {
+    setUserGuess(guess)
+    setRevealed(true)
+    onReveal?.()
+  }
+
+  const correct = revealed && userGuess !== null && actual !== undefined
     ? userGuess === (actual ? 'YES' : 'NO')
     : undefined
 
@@ -32,7 +35,7 @@ export default function UserGuess({ actual, onReveal }: UserGuessProps) {
 
       <div className="flex gap-4 mb-4">
         <button
-          onClick={() => setUserGuess('YES')}
+          onClick={() => handleGuess('YES')}
           disabled={revealed}
           className={`
             flex-1 px-6 py-3 rounded-sm font-mono text-sm
@@ -73,23 +76,14 @@ export default function UserGuess({ actual, onReveal }: UserGuessProps) {
         </div>
       )}
 
-      {actual !== undefined && (
-        <button
-          onClick={handleReveal}
-          disabled={revealed || userGuess === null}
-          className="
-            w-full px-4 py-2 border border-gray-300 rounded-sm
-            font-mono text-sm bg-white hover:bg-gray-50
-            disabled:opacity-50 disabled:cursor-not-allowed
-            transition-colors
-          "
-        >
-          {revealed ? 'Revealed' : 'Reveal Result'}
-        </button>
+      {actual === undefined && (
+        <div className="text-xs font-mono text-yellow-700 bg-yellow-50 border border-yellow-200 px-3 py-2 rounded-sm">
+          Actual answer not loaded yet.
+        </div>
       )}
 
       {revealed && actual !== undefined && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
           <p className="text-sm font-mono mb-2">
             Actual result:{' '}
             <span className={actual ? 'text-green-600' : 'text-red-600'}>
@@ -103,7 +97,15 @@ export default function UserGuess({ actual, onReveal }: UserGuessProps) {
           )}
         </div>
       )}
+
+      {!revealed && actual !== undefined && userGuess === null && (
+        <button
+          onClick={revealNow}
+          className="text-xs font-mono text-gray-600 underline underline-offset-4 mt-2"
+        >
+          Skip guess and reveal answer
+        </button>
+      )}
     </div>
   )
 }
-

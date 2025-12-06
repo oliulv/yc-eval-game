@@ -12,6 +12,8 @@ interface Prediction {
   responseTime?: number
   correct?: boolean
   error?: string
+  reasoning?: string
+  reasoningLoading?: boolean
 }
 
 interface ModelGridProps {
@@ -19,6 +21,7 @@ interface ModelGridProps {
   transcript: string | null
   actual?: boolean
   selectedModelIds?: string[]
+  onActualReveal?: () => void
 }
 
 export default function ModelGrid({
@@ -26,6 +29,7 @@ export default function ModelGrid({
   transcript,
   actual,
   selectedModelIds,
+  onActualReveal,
 }: ModelGridProps) {
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -99,6 +103,7 @@ export default function ModelGrid({
         }
       })
       setPredictions(newPredictions)
+      onActualReveal?.()
     } catch (error: any) {
       console.error('Prediction error:', error)
       // Update with errors
@@ -113,6 +118,55 @@ export default function ModelGrid({
       setPredictions(errorPredictions)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleReasoning = async (modelId: string) => {
+    setPredictions((prev) => ({
+      ...prev,
+      [modelId]: { ...prev[modelId], reasoningLoading: true },
+    }))
+
+    try {
+      const priorPrediction = predictions[modelId]?.prediction
+      const response = await fetch('/api/predict/reason', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId,
+          modelId,
+          prediction: priorPrediction,
+        }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch reasoning')
+      }
+
+      setPredictions((prev) => ({
+        ...prev,
+        [modelId]: {
+          ...prev[modelId],
+          prediction: data.prediction,
+          reasoning: data.reasoning,
+          responseTime: data.responseTime ?? prev[modelId]?.responseTime,
+          correct:
+            actual !== undefined
+              ? data.prediction === (actual ? 'YES' : 'NO')
+              : prev[modelId]?.correct,
+          reasoningLoading: false,
+        },
+      }))
+    } catch (error: any) {
+      setPredictions((prev) => ({
+        ...prev,
+        [modelId]: {
+          ...prev[modelId],
+          reasoningLoading: false,
+          error: error?.message || 'Failed to fetch reasoning',
+        },
+      }))
     }
   }
 
@@ -148,6 +202,13 @@ export default function ModelGrid({
               correct={prediction?.correct}
               error={prediction?.error}
               isThinking={isLoading && !prediction?.prediction && !prediction?.error}
+              reasoning={prediction?.reasoning}
+              onRequestReasoning={
+                prediction?.prediction && !prediction?.reasoning
+                  ? () => handleReasoning(model.id)
+                  : undefined
+              }
+              isLoadingReasoning={prediction?.reasoningLoading}
             />
           )
         })}
@@ -155,4 +216,3 @@ export default function ModelGrid({
     </div>
   )
 }
-
