@@ -128,7 +128,7 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {currentVideo && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Video Navigation */}
             <div className="flex items-center justify-between border-b border-gray-200 pb-4">
               <div className="flex items-center gap-4">
@@ -152,48 +152,54 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Video Player */}
-            <VideoPlayer
-              youtubeId={currentVideo.youtube_id}
-              title={currentVideo.title || undefined}
-            />
+            {/* Main Content: Video and Predictions Side by Side on Desktop */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column: Video */}
+              <div className="space-y-4">
+                <VideoPlayer
+                  youtubeId={currentVideo.youtube_id}
+                  title={currentVideo.title || undefined}
+                />
 
-            {/* Transcription Status */}
-            {transcribing && (
-              <div className="p-4 border border-gray-200 rounded-sm bg-gray-50">
-                <p className="text-sm font-mono text-gray-600">
-                  Transcribing video...
-                </p>
+                {/* Transcription Status */}
+                {transcribing && (
+                  <div className="p-3 border border-gray-200 rounded-sm bg-gray-50">
+                    <p className="text-xs font-mono text-gray-600">
+                      Transcribing video...
+                    </p>
+                  </div>
+                )}
+
+                {!transcript && !transcribing && (
+                  <div className="p-3 border border-gray-200 rounded-sm bg-yellow-50">
+                    <p className="text-xs font-mono text-yellow-700">
+                      Transcript not available. Click "Get Predictions" to transcribe automatically.
+                    </p>
+                  </div>
+                )}
+
+                {/* User Guess */}
+                <UserGuess
+                  actual={revealed ? currentVideo.accepted : undefined}
+                  onReveal={() => setRevealed(true)}
+                />
               </div>
-            )}
 
-            {!transcript && !transcribing && (
-              <div className="p-4 border border-gray-200 rounded-sm bg-yellow-50">
-                <p className="text-sm font-mono text-yellow-700">
-                  Transcript not available. Click "Get Predictions" to transcribe automatically.
-                </p>
+              {/* Right Column: Model Selector and Predictions */}
+              <div className="space-y-4">
+                <ModelSelector
+                  selectedModelIds={selectedModelIds}
+                  onChange={setSelectedModelIds}
+                />
+
+                <ModelGrid
+                  videoId={currentVideo.id}
+                  transcript={transcript}
+                  actual={revealed ? currentVideo.accepted : undefined}
+                  selectedModelIds={selectedModelIds}
+                />
               </div>
-            )}
-
-            {/* Model Selector */}
-            <ModelSelector
-              selectedModelIds={selectedModelIds}
-              onChange={setSelectedModelIds}
-            />
-
-            {/* Model Predictions */}
-            <ModelGrid
-              videoId={currentVideo.id}
-              transcript={transcript}
-              actual={revealed ? currentVideo.accepted : undefined}
-              selectedModelIds={selectedModelIds}
-            />
-
-            {/* User Guess */}
-            <UserGuess
-              actual={revealed ? currentVideo.accepted : undefined}
-              onReveal={() => setRevealed(true)}
-            />
+            </div>
         </div>
         )}
       </main>

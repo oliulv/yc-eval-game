@@ -1,9 +1,9 @@
-import { openai } from '@ai-sdk/openai'
-import { anthropic } from '@ai-sdk/anthropic'
-import { google } from '@ai-sdk/google'
-import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import type { Model } from './models'
+
+// AI SDK v5 has built-in AI Gateway support
+// When AI_GATEWAY_API_KEY is set and model format is 'provider/model',
+// the SDK automatically routes through AI Gateway
 
 const PROMPT = `You are evaluating a startup founder's application transcript for a competitive startup accelerator program. Based solely on the transcript content, predict whether this founder was accepted into the accelerator.
 
@@ -20,52 +20,15 @@ export async function getModelPrediction(
   
   const prompt = PROMPT.replace('{transcript}', transcript)
 
-  let provider: any
-  let modelId: string
-
-  switch (model.provider) {
-    case 'openai':
-      provider = openai(model.modelId)
-      modelId = model.modelId
-      break
-    case 'anthropic':
-      provider = anthropic(model.modelId)
-      modelId = model.modelId
-      break
-    case 'google':
-      provider = google(model.modelId)
-      modelId = model.modelId
-      break
-    case 'meta':
-      // Meta models via OpenAI-compatible endpoint
-      provider = openai(model.modelId)
-      modelId = model.modelId
-      break
-    case 'mistral':
-      // Mistral via OpenAI-compatible endpoint
-      provider = openai(model.modelId)
-      modelId = model.modelId
-      break
-    case 'grok':
-      // Grok (xAI) via OpenAI-compatible API
-      const grokClient = createOpenAI({
-        apiKey: process.env.GROK_API_KEY,
-        baseURL: 'https://api.x.ai/v1',
-      })
-      provider = grokClient(model.modelId)
-      modelId = model.modelId
-      break
-    default:
-      throw new Error(`Unsupported provider: ${model.provider}`)
-  }
-
+  // Pass model string directly - AI SDK automatically detects 'provider/model' format
+  // and routes through AI Gateway when AI_GATEWAY_API_KEY is set
   try {
     const result = await generateText({
-      model: provider,
+      model: model.modelId, // e.g., 'openai/gpt-4o' - SDK handles routing automatically
       prompt,
       // Limit response length for YES/NO answers
       maxTokens: 10,
-    } as Parameters<typeof generateText>[0])
+    })
 
     const responseTime = Date.now() - startTime
     const text = result.text.trim().toUpperCase()

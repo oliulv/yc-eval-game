@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import ytdl from 'ytdl-core'
+import ytdl from '@distube/ytdl-core'
 
 function extractYouTubeId(url: string): string | null {
   const patterns = [

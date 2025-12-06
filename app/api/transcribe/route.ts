@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import ytdl from 'ytdl-core'
+import ytdl from '@distube/ytdl-core'
 import { transcribeAudio } from '@/lib/whisper'
 import { sanitizeTranscript } from '@/lib/sanitize'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -30,17 +30,23 @@ export async function POST(request: Request) {
     }
 
     // Download audio from YouTube
-    const audioStream = ytdl(youtubeId, {
-      quality: 'lowestaudio',
-      filter: 'audioonly',
-    })
+    let audioBuffer: Buffer
+    try {
+      const audioStream = ytdl(youtubeId, {
+        quality: 'lowestaudio',
+        filter: 'audioonly',
+      })
 
-    // Convert stream to buffer
-    const chunks: Buffer[] = []
-    for await (const chunk of audioStream) {
-      chunks.push(Buffer.from(chunk))
+      // Convert stream to buffer
+      const chunks: Buffer[] = []
+      for await (const chunk of audioStream) {
+        chunks.push(Buffer.from(chunk))
+      }
+      audioBuffer = Buffer.concat(chunks)
+    } catch (ytdlError: any) {
+      console.error('ytdl-core error:', ytdlError)
+      throw new Error(`Failed to download audio from YouTube: ${ytdlError.message}. The video may be unavailable or restricted.`)
     }
-    const audioBuffer = Buffer.concat(chunks)
 
     // Transcribe with Whisper
     const rawTranscript = await transcribeAudio(audioBuffer, `${youtubeId}.mp3`)

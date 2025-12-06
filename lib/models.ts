@@ -1,33 +1,29 @@
 export interface Model {
   id: string
   name: string
-  provider: 'openai' | 'anthropic' | 'google' | 'meta' | 'mistral' | 'grok'
-  modelId: string
+  modelId: string // Format: provider/model-name (e.g., 'openai/gpt-4o')
 }
 
 export const MODELS: Model[] = [
   // OpenAI
-  { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', modelId: 'gpt-4o' },
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', modelId: 'gpt-4o-mini' },
+  { id: 'gpt-4o', name: 'GPT-4o', modelId: 'openai/gpt-4o' },
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', modelId: 'openai/gpt-4o-mini' },
+  { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', modelId: 'openai/gpt-4.1-mini' },
   
   // Anthropic
-  { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'anthropic', modelId: 'claude-3-5-sonnet-20241022' },
-  { id: 'claude-3-haiku', name: 'Claude 3 Haiku', provider: 'anthropic', modelId: 'claude-3-haiku-20240307' },
+  { id: 'claude-sonnet-4', name: 'Claude Sonnet 4', modelId: 'anthropic/claude-sonnet-4' },
+  { id: 'claude-haiku-4.5', name: 'Claude Haiku 4.5', modelId: 'anthropic/claude-haiku-4.5' },
   
   // Google
-  { id: 'gemini-1-5-pro', name: 'Gemini 1.5 Pro', provider: 'google', modelId: 'gemini-1.5-pro' },
-  { id: 'gemini-1-5-flash', name: 'Gemini 1.5 Flash', provider: 'google', modelId: 'gemini-1.5-flash' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', modelId: 'google/gemini-2.5-flash' },
+  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro Preview', modelId: 'google/gemini-3-pro-preview' },
   
-  // Meta (via OpenAI-compatible API)
-  { id: 'llama-3-1-70b', name: 'Llama 3.1 70B', provider: 'meta', modelId: 'meta-llama/Meta-Llama-3.1-70B-Instruct' },
+  // xAI (Grok)
+  { id: 'grok-2', name: 'Grok 2', modelId: 'xai/grok-2' },
+  { id: 'grok-code-fast-1', name: 'Grok Code Fast 1', modelId: 'xai/grok-code-fast-1' },
   
-  // Mistral
-  { id: 'mistral-large', name: 'Mistral Large', provider: 'mistral', modelId: 'mistral-large' },
-  { id: 'mixtral-8x7b', name: 'Mixtral 8x7B', provider: 'mistral', modelId: 'mixtral-8x7b-instruct' },
-  
-  // Grok (xAI)
-  { id: 'grok-2-1212', name: 'Grok 2', provider: 'grok', modelId: 'grok-2-1212' },
-  { id: 'grok-2-vision-1212', name: 'Grok 2 Vision', provider: 'grok', modelId: 'grok-2-vision-1212' },
+  // Meta (via Groq on AI Gateway)
+  { id: 'llama-3.3-70b', name: 'Llama 3.3 70B', modelId: 'meta-llama/llama-3.3-70b-instruct' },
 ]
 
 export function getModelById(id: string): Model | undefined {

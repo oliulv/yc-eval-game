@@ -13,7 +13,7 @@ export default function VideoPlayer({ youtubeId, title, onVideoEnd }: VideoPlaye
   const [playerReady, setPlayerReady] = useState(false)
 
   const opts = {
-    height: '390',
+    height: '280',
     width: '100%',
     playerVars: {
       autoplay: 0,
@@ -25,11 +25,11 @@ export default function VideoPlayer({ youtubeId, title, onVideoEnd }: VideoPlaye
   return (
     <div className="w-full">
       {title && (
-        <h2 className="text-xl font-mono mb-4 text-gray-900 border-b border-gray-200 pb-2">
+        <h2 className="text-lg font-mono mb-3 text-gray-900 border-b border-gray-200 pb-2">
           {title}
         </h2>
       )}
-      <div className="relative w-full aspect-video bg-black rounded-sm border border-gray-200">
+      <div className="relative w-full bg-black rounded-sm border border-gray-200" style={{ aspectRatio: '16/9', maxWidth: '500px' }}>
         <YouTube
           videoId={youtubeId}
           opts={opts}
