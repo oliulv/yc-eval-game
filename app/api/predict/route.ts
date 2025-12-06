@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
     // Get predictions from all selected models in parallel
     const predictions = await Promise.allSettled(
-      resolvedModels.map(async (model) => {
+      resolvedModels.map(async (model: Awaited<ReturnType<typeof getAllowedModels>>[number]) => {
         const result = await getModelPrediction(
           { id: model.id, name: model.label, modelId: model.id },
           video.transcript!,
