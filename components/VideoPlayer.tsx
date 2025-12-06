@@ -1,7 +1,7 @@
 'use client'
 
 import YouTube from 'react-youtube'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface VideoPlayerProps {
   youtubeId: string
@@ -11,6 +11,7 @@ interface VideoPlayerProps {
 
 export default function VideoPlayer({ youtubeId, title, onVideoEnd }: VideoPlayerProps) {
   const [playerReady, setPlayerReady] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const opts = {
     playerVars: {
@@ -20,16 +21,20 @@ export default function VideoPlayer({ youtubeId, title, onVideoEnd }: VideoPlaye
     },
   }
 
+  // Hint to browser to defer iframe load where possible
+  useEffect(() => {
+    const iframe = containerRef.current?.querySelector('iframe')
+    if (iframe) {
+      iframe.setAttribute('loading', 'lazy')
+    }
+  }, [youtubeId, playerReady])
+
   return (
     <div className="w-full">
-      {title && (
-        <h2 className="text-lg font-mono mb-3 text-gray-900 border-b border-gray-200 pb-2">
-          {title}
-        </h2>
-      )}
       <div
         className="relative w-full bg-black rounded-sm border border-gray-200 overflow-hidden"
         style={{ aspectRatio: '16/9' }}
+        ref={containerRef}
       >
         <YouTube
           videoId={youtubeId}

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 import {
   isDownloadError,
   markDownloadFailure,
@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     }
 
     // Check if video already exists and has transcript
+    const supabaseAdmin = getSupabaseAdminClient()
     const { data: existingVideo } = await supabaseAdmin
       .from('videos')
       .select('transcript, raw_transcript, title, accepted')

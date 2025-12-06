@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getModelPrediction } from '@/lib/ai'
 import { MODELS, getModelById, type Model } from '@/lib/models'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   try {
@@ -15,6 +15,7 @@ export async function POST(request: Request) {
     }
 
     // Get video and transcript
+    const supabaseAdmin = getSupabaseAdminClient()
     const { data: video, error: videoError } = await supabaseAdmin
       .from('videos')
       .select('id, transcript, accepted')
@@ -91,4 +92,3 @@ export async function POST(request: Request) {
     )
   }
 }
-

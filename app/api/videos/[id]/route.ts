@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase'
 import type { Video } from '@/types'
 
 export async function GET(
@@ -7,6 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const supabase = getSupabaseClient()
     const { id } = await params
     const { data, error } = await supabase
       .from('videos')
@@ -36,4 +37,3 @@ export async function GET(
     )
   }
 }
-

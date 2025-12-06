@@ -200,7 +200,6 @@ export default function Home() {
               <div className="space-y-4">
                 <VideoPlayer
                   youtubeId={currentVideo.youtube_id}
-                  title={currentVideo.title || undefined}
                 />
 
                 {/* Transcription Status */}
@@ -224,6 +223,7 @@ export default function Home() {
                 <UserGuess
                   key={currentVideo.id}
                   actual={currentVideo.accepted}
+                  title={currentVideo.title}
                   onReveal={() => setRevealed(true)}
                 />
               </div>

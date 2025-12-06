@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdminClient } from '@/lib/supabase'
 import { fetchYouTubeTitle } from '@/lib/youtube'
 import {
   isDownloadError,
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     }
 
     // Check if video already exists
+    const supabaseAdmin = getSupabaseAdminClient()
     const { data: existing } = await supabaseAdmin
       .from('videos')
       .select('id')
@@ -85,6 +86,12 @@ export async function POST(request: Request) {
       .single()
 
     if (insertError) {
+      if ((insertError as any)?.code === '23505') {
+        return NextResponse.json(
+          { error: 'Video already exists' },
+          { status: 409 }
+        )
+      }
       throw insertError
     }
 

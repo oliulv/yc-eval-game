@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase'
 import type { Video } from '@/types'
 
 export async function GET(request: Request) {
   try {
+    const supabase = getSupabaseClient()
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
@@ -32,4 +33,3 @@ export async function GET(request: Request) {
     )
   }
 }
-

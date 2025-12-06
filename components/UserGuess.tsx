@@ -1,13 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { useEffect } from 'react'
 
 interface UserGuessProps {
   actual?: boolean
+  title?: string | null
   onReveal?: () => void
 }
 
-export default function UserGuess({ actual, onReveal }: UserGuessProps) {
+export default function UserGuess({ actual, title, onReveal }: UserGuessProps) {
   const [userGuess, setUserGuess] = useState<'YES' | 'NO' | null>(null)
   const [revealed, setRevealed] = useState(false)
 
@@ -19,9 +21,15 @@ export default function UserGuess({ actual, onReveal }: UserGuessProps) {
 
   const handleGuess = (guess: 'YES' | 'NO') => {
     setUserGuess(guess)
-    setRevealed(true)
-    onReveal?.()
   }
+
+  // Ensure reveal always fires once a guess is made (handles any button)
+  useEffect(() => {
+    if (userGuess && actual !== undefined) {
+      setRevealed(true)
+      onReveal?.()
+    }
+  }, [userGuess, actual, onReveal])
 
   const correct = revealed && userGuess !== null && actual !== undefined
     ? userGuess === (actual ? 'YES' : 'NO')
@@ -84,6 +92,11 @@ export default function UserGuess({ actual, onReveal }: UserGuessProps) {
 
       {revealed && actual !== undefined && (
         <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+          {title && (
+            <p className="text-sm font-mono text-gray-700">
+              Title: <span className="font-semibold text-gray-900">{title}</span>
+            </p>
+          )}
           <p className="text-sm font-mono mb-2">
             Actual result:{' '}
             <span className={actual ? 'text-green-600' : 'text-red-600'}>

@@ -1,7 +1,7 @@
 import { downloadAudioWithYtDlp, type DownloadError } from './youtube'
 import { transcribeAudio } from './whisper'
 import { sanitizeTranscript } from './sanitize'
-import { supabaseAdmin } from './supabase'
+import { getSupabaseAdminClient } from './supabase'
 
 export interface TranscriptionResult {
   rawTranscript: string
@@ -41,6 +41,7 @@ export async function markDownloadFailure(
   errorMessage?: string
 ) {
   try {
+    const supabaseAdmin = getSupabaseAdminClient()
     const { error } = await supabaseAdmin
       .from('videos')
       .update({
@@ -66,6 +67,7 @@ export async function persistTranscription(
     title?: string | null
   }
 ) {
+  const supabaseAdmin = getSupabaseAdminClient()
   const { rawTranscript, sanitizedTranscript } = result
   const timestamp = new Date().toISOString()
   const payload = {

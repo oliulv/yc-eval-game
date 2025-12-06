@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase'
 import type { ModelStats } from '@/types'
 
 export async function GET() {
   try {
+    const supabase = getSupabaseClient()
     const { data, error } = await supabase
       .from('model_stats')
       .select('*')
@@ -23,4 +24,3 @@ export async function GET() {
     )
   }
 }
-
