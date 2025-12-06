@@ -75,7 +75,7 @@ export async function POST(request: Request) {
 
         return {
           modelId: model.id,
-          modelName: model.name,
+          modelName: model.label,
           prediction: result.prediction,
           confidence: result.confidence,
           responseTime: result.responseTime,
