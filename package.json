@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "import-videos": "bun scripts/import-videos.js"
-    ,"reset-leaderboard": "bun scripts/reset-leaderboard.ts"
+    "import-videos": "bun scripts/import-videos.js",
+    "reset-leaderboard": "bun scripts/reset-leaderboard.ts",
+    "backfill-leaderboard": "bun scripts/backfill-leaderboard.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.77",

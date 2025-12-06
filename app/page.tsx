@@ -284,10 +284,6 @@ export default function Home() {
                   </button>
                   {showModelPicker && (
                     <div className="p-4 space-y-4">
-                      <ModelSelector
-                        selectedModelIds={selectedModelIds}
-                        onChange={setSelectedModelIds}
-                      />
                       <div className="border border-gray-200 rounded-sm p-4 bg-white">
                         <div className="flex items-center justify-between">
                           <label className="text-sm font-mono text-gray-900">
@@ -306,6 +302,11 @@ export default function Home() {
                           Requests will timeout after this duration.
                         </p>
                       </div>
+
+                      <ModelSelector
+                        selectedModelIds={selectedModelIds}
+                        onChange={setSelectedModelIds}
+                      />
                     </div>
                   )}
                 </div>
