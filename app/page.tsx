@@ -170,6 +170,32 @@ export default function Home() {
         </div>
       </nav>
 
+      <div className="border-b border-gray-200 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 py-2">
+          <p className="text-xs font-mono text-gray-700">
+            Inspired by the YC Arena game by{' '}
+            <a
+              href="https://x.com/brycent"
+              target="_blank"
+              rel="noreferrer"
+              className="text-gray-900 hover:underline"
+            >
+              @brycent
+            </a>{' '}
+            and{' '}
+            <a
+              href="https://x.com/mhimed100"
+              target="_blank"
+              rel="noreferrer"
+              className="text-gray-900 hover:underline"
+            >
+              @mhimed100
+            </a>
+            . Videos are sourced from their YC Arena game.
+          </p>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 py-8">
         {currentVideo && (
           <div className="space-y-6">
