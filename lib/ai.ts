@@ -58,6 +58,14 @@ export async function getModelPrediction(
       : null
 
   try {
+    console.log('[MODEL_REQUEST]', {
+      model: model.modelId,
+      includeReasoning: options?.includeReasoning ?? false,
+      forcePrediction: options?.forcePrediction,
+      maxReasonMs: options?.maxReasonMs,
+      promptSample: prompt.slice(0, 120) + '...',
+    })
+
     const result = await generateText({
       model: model.modelId, // SDK handles routing automatically
       prompt,
@@ -93,6 +101,13 @@ export async function getModelPrediction(
       }
     }
 
+    console.log('[MODEL_RESPONSE]', {
+      model: model.modelId,
+      prediction,
+      responseTime,
+      reasoning: reasoning ? reasoning.slice(0, 120) + '...' : undefined,
+    })
+
     return {
       prediction,
       responseTime,
@@ -100,9 +115,14 @@ export async function getModelPrediction(
     }
   } catch (error: any) {
     if (abortController.signal.aborted) {
+      console.error('[MODEL_TIMEOUT]', { model: model.modelId, maxReasonMs: options?.maxReasonMs })
       throw new Error('Prediction timed out')
     }
-    console.error(`Error getting prediction from ${model.name}:`, error)
+    console.error('[MODEL_ERROR]', {
+      model: model.modelId,
+      message: error?.message,
+      stack: error?.stack,
+    })
     throw error
   } finally {
     if (timeout) clearTimeout(timeout)

@@ -165,12 +165,6 @@ export default function Home() {
               >
                 Leaderboard
               </Link>
-              <Link
-                href="/submit"
-                className="text-sm font-mono text-gray-700 hover:text-gray-900 border-b border-transparent hover:border-gray-300"
-              >
-                Submit Video
-              </Link>
             </div>
           </div>
         </div>
